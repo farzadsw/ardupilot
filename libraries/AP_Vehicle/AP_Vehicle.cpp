@@ -44,6 +44,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(frsky_parameters, "FRSKY_", 6, AP_Vehicle, AP_Frsky_Parameters),
 #endif
 
+#if GENERATOR_ENABLED
+    // @Group: GEN_
+    // @Path: ../AP_Generator/AP_Generator.cpp
+    AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
+#endif
+
     AP_GROUPEND
 };
 
@@ -132,12 +138,28 @@ void AP_Vehicle::setup()
 #endif
 
     send_watchdog_reset_statustext();
+
+#if GENERATOR_ENABLED
+    generator.init();
+#endif
 }
 
 void AP_Vehicle::loop()
 {
     scheduler.loop();
     G_Dt = scheduler.get_loop_period_s();
+
+    if (!done_safety_init) {
+        /*
+          disable safety if requested. This is delayed till after the
+          first loop has run to ensure that all servos have received
+          an update for their initial values. Otherwise we may end up
+          briefly driving a servo to a position out of the configured
+          range which could damage hardware
+        */
+        done_safety_init = true;
+        BoardConfig.init_safety();
+    }
 }
 
 /*
@@ -166,6 +188,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK(update_dynamic_notch,                   200,    200),
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
+#if GENERATOR_ENABLED
+    SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50),
+#endif
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)

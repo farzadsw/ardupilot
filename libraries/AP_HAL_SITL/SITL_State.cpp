@@ -352,9 +352,18 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         rplidara2 = new SITL::PS_RPLidarA2();
         return rplidara2->fd();
+    } else if (streq(name, "terarangertower")) {
+        if (terarangertower != nullptr) {
+            AP_HAL::panic("Only one terarangertower at a time");
+        }
+        terarangertower = new SITL::PS_TeraRangerTower();
+        return terarangertower->fd();
     } else if (streq(name, "richenpower")) {
         sitl_model->set_richenpower(&_sitl->richenpower_sim);
         return _sitl->richenpower_sim.fd();
+    } else if (streq(name, "ie24")) {
+        sitl_model->set_ie24(&_sitl->ie24_sim);
+        return _sitl->ie24_sim.fd();
     } else if (streq(name, "gyus42v2")) {
         if (gyus42v2 != nullptr) {
             AP_HAL::panic("Only one gyus42v2 at a time");
@@ -457,8 +466,15 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No rplidara2 created");
         }
         return rplidara2->write_fd();
+    } else if (streq(name, "terarangertower")) {
+        if (terarangertower == nullptr) {
+            AP_HAL::panic("No terarangertower created");
+        }
+        return terarangertower->write_fd();
     } else if (streq(name, "richenpower")) {
         return _sitl->richenpower_sim.write_fd();
+    } else if (streq(name, "ie24")) {
+        return _sitl->ie24_sim.write_fd();
     } else if (streq(name, "gyus42v2")) {
         if (gyus42v2 == nullptr) {
             AP_HAL::panic("No gyus42v2 created");
@@ -664,6 +680,10 @@ void SITL_State::_fdm_input_local(void)
 
     if (rplidara2 != nullptr) {
         rplidara2->update(sitl_model->get_location());
+    }
+
+    if (terarangertower != nullptr) {
+        terarangertower->update(sitl_model->get_location());
     }
 
     if (_sitl) {
