@@ -225,6 +225,14 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
         }
         origin.z -= origin_terr_offset;
     }
+    
+    //ignoring altitude target:
+    float terr_offset = 0.0f;
+    if (_terrain_alt && !get_terrain_offset(terr_offset)) {
+        return false;
+    }
+    const Vector3f &curr_pos = _inav.get_position();
+    origin.z = curr_pos.z - terr_offset;
 
     // set origin and destination
     return set_wp_origin_and_destination(origin, destination, terrain_alt);
@@ -245,6 +253,9 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     // store origin and destination locations
     _origin = origin;
     _destination = destination;
+    //ignoring altitude target
+    _destination.z = origin.z;
+
     _terrain_alt = terrain_alt;
     Vector3f pos_delta = _destination - _origin;
 
@@ -501,6 +512,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
             }else{
                 // regular waypoints also require the copter to be within the waypoint radius
                 Vector3f dist_to_dest = (curr_pos - Vector3f(0,0,terr_offset)) - _destination;
+                //ignoring alt
+                dist_to_dest.z = 0;
+
                 if( dist_to_dest.length() <= _wp_radius_cm ) {
                     _flags.reached_destination = true;
                 }

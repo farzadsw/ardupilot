@@ -553,7 +553,8 @@ void AC_PosControl::run_z_controller()
     _limit.pos_down = false;
 
     // calculate altitude error
-    _pos_error.z = _pos_target.z - curr_alt;
+    //removed the target alt:
+    _pos_error.z = curr_alt;
 
     // do not let target altitude get too far from current altitude
     if (_pos_error.z > _leash_up_z) {
@@ -654,7 +655,8 @@ void AC_PosControl::run_z_controller()
     } else {
         thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
     }
-    thr_out += _motors.get_throttle_hover();
+    // was +=, removed + to disable controller 
+    thr_out = _motors.get_throttle_hover();
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
